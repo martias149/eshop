@@ -5,17 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Eshop</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      font-family: sans-serif;
-      background: #f4f4f4;
-      color: #222;
-    }
+    body { font-family: sans-serif; background: #f4f4f4; color: #222; }
 
     header {
       background: #1a1a2e;
@@ -25,63 +17,109 @@
       font-weight: bold;
     }
 
-    main {
-      max-width: 900px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-    }
+    main { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
 
-    h2 {
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       margin-bottom: 1rem;
-      font-size: 1.2rem;
-      color: #555;
     }
 
-    #product-list {
+    .toolbar h2 { font-size: 1.2rem; color: #555; }
+
+    .view-toggle { display: flex; gap: 0.4rem; }
+
+    .view-toggle button {
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: 0.4rem 0.7rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      transition: background 0.15s;
+    }
+
+    .view-toggle button.active {
+      background: #1a1a2e;
+      color: #fff;
+      border-color: #1a1a2e;
+    }
+
+    /* --- GRID --- */
+    #product-list.grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 1.2rem;
     }
 
-    .product-card {
+    #product-list.grid .product-item {
       background: #fff;
       border-radius: 8px;
       padding: 1.2rem;
       box-shadow: 0 2px 6px rgba(0,0,0,0.08);
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.4rem;
     }
 
-    .product-card h3 {
-      font-size: 1.1rem;
+    #product-list.grid .product-item h3 { font-size: 1rem; }
+    #product-list.grid .product-item .description { font-size: 0.85rem; color: #666; flex-grow: 1; }
+    #product-list.grid .product-item .price { font-size: 1.1rem; font-weight: bold; color: #1a1a2e; }
+    #product-list.grid .product-item .stock { font-size: 0.8rem; color: #999; }
+
+    /* --- LIST --- */
+    #product-list.list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
     }
 
-    .product-card .description {
-      font-size: 0.9rem;
-      color: #666;
-      flex-grow: 1;
+    #product-list.list .product-item {
+      background: #fff;
+      border-radius: 6px;
+      padding: 0.9rem 1.2rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      grid-template-rows: auto auto;
+      column-gap: 1.5rem;
+      align-items: center;
     }
 
-    .product-card .price {
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #1a1a2e;
-    }
-
-    .product-card .stock {
-      font-size: 0.85rem;
-      color: #888;
-    }
-
-    #error-msg {
-      color: red;
+    #product-list.list .product-item h3 {
+      grid-column: 1;
+      grid-row: 1;
       font-size: 1rem;
     }
 
-    #loading {
-      color: #888;
+    #product-list.list .product-item .description {
+      grid-column: 1;
+      grid-row: 2;
+      font-size: 0.85rem;
+      color: #666;
     }
+
+    #product-list.list .product-item .price {
+      grid-column: 2;
+      grid-row: 1 / 3;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #1a1a2e;
+      white-space: nowrap;
+    }
+
+    #product-list.list .product-item .stock {
+      grid-column: 3;
+      grid-row: 1 / 3;
+      font-size: 0.85rem;
+      color: #999;
+      white-space: nowrap;
+    }
+
+    #error-msg { color: red; }
+    #loading { color: #888; }
   </style>
 </head>
 <body>
@@ -89,14 +127,33 @@
 <header>🛒 Eshop</header>
 
 <main>
-  <h2>Produkty</h2>
+  <div class="toolbar">
+    <h2>Produkty</h2>
+    <div class="view-toggle">
+      <button id="btn-list" title="Seznam">☰ Seznam</button>
+      <button id="btn-grid" title="Mřížka" class="active">⊞ Mřížka</button>
+    </div>
+  </div>
+
   <p id="loading">Načítám produkty...</p>
   <p id="error-msg" hidden></p>
-  <div id="product-list"></div>
+  <div id="product-list" class="grid"></div>
 </main>
 
 <script>
   const API_URL = '/api/products/';
+  let currentView = 'grid';
+
+  document.getElementById('btn-grid').addEventListener('click', () => setView('grid'));
+  document.getElementById('btn-list').addEventListener('click', () => setView('list'));
+
+  function setView(view) {
+    currentView = view;
+    const list = document.getElementById('product-list');
+    list.className = view;
+    document.getElementById('btn-grid').classList.toggle('active', view === 'grid');
+    document.getElementById('btn-list').classList.toggle('active', view === 'list');
+  }
 
   async function loadProducts() {
     const loading = document.getElementById('loading');
@@ -118,7 +175,7 @@
       }
 
       list.innerHTML = products.map(p => `
-        <div class="product-card">
+        <div class="product-item">
           <h3>${escapeHtml(p.name)}</h3>
           <p class="description">${escapeHtml(p.description || '')}</p>
           <p class="price">${parseFloat(p.price).toFixed(2)} Kč</p>
