@@ -1,7 +1,28 @@
-from django.test import TestCase
+from django.test import TestCase, Client
 from rest_framework.test import APIClient
 from rest_framework import status
 from .models import Product
+
+
+class PageSmokeTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_frontend_stranka(self):
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_api_root(self):
+        response = self.client.get('/api/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_api_produkty(self):
+        response = self.client.get('/api/products/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_stranka(self):
+        response = self.client.get('/admin/')
+        self.assertIn(response.status_code, [200, 302])
 
 
 class ProductModelTest(TestCase):
