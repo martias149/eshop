@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eshop</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: sans-serif;
+      background: #f4f4f4;
+      color: #222;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 1rem 2rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    h2 {
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      color: #555;
+    }
+
+    #product-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.2rem;
+    }
+
+    .product-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1.2rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .product-card h3 {
+      font-size: 1.1rem;
+    }
+
+    .product-card .description {
+      font-size: 0.9rem;
+      color: #666;
+      flex-grow: 1;
+    }
+
+    .product-card .price {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #1a1a2e;
+    }
+
+    .product-card .stock {
+      font-size: 0.85rem;
+      color: #888;
+    }
+
+    #error-msg {
+      color: red;
+      font-size: 1rem;
+    }
+
+    #loading {
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+
+<header>🛒 Eshop</header>
+
+<main>
+  <h2>Produkty</h2>
+  <p id="loading">Načítám produkty...</p>
+  <p id="error-msg" hidden></p>
+  <div id="product-list"></div>
+</main>
+
+<script>
+  const API_URL = '/api/products/';
+
+  async function loadProducts() {
+    const loading = document.getElementById('loading');
+    const errorMsg = document.getElementById('error-msg');
+    const list = document.getElementById('product-list');
+
+    try {
+      const response = await fetch(API_URL);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+
+      loading.hidden = true;
+
+      const products = Array.isArray(data) ? data : data.results ?? [];
+
+      if (products.length === 0) {
+        list.innerHTML = '<p>Žádné produkty nenalezeny.</p>';
+        return;
+      }
+
+      list.innerHTML = products.map(p => `
+        <div class="product-card">
+          <h3>${escapeHtml(p.name)}</h3>
+          <p class="description">${escapeHtml(p.description || '')}</p>
+          <p class="price">${parseFloat(p.price).toFixed(2)} Kč</p>
+          <p class="stock">Skladem: ${p.stock} ks</p>
+        </div>
+      `).join('');
+
+    } catch (err) {
+      loading.hidden = true;
+      errorMsg.hidden = false;
+      errorMsg.textContent = 'Chyba při načítání produktů: ' + err.message;
+    }
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  loadProducts();
+</script>
+
+</body>
+</html>
