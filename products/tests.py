@@ -1,7 +1,9 @@
 from django.test import TestCase, Client
+from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from rest_framework import status
-from .models import Product
+from .models import Product, Customer, Address, Order, OrderItem
 
 
 class PageSmokeTest(TestCase):
@@ -87,3 +89,36 @@ class ProductAPITest(TestCase):
     def test_vytvoreni_bez_nazvu(self):
         response = self.client.post('/api/products/', {'price': '100.00', 'stock': 1}, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class StockManagementTest(TestCase):
+    def setUp(self):
+        self.product = Product.objects.create(name='BMW X5', price=1500000, stock=5)
+        user = User.objects.create_user(username='testuser', password='pass')
+        self.customer = Customer.objects.create(user=user)
+        self.address = Address.objects.create(
+            customer=self.customer, street='Main 1', city='Prague', zip_code='10000'
+        )
+        self.order = Order.objects.create(customer=self.customer, shipping_address=self.address)
+        OrderItem.objects.create(order=self.order, product=self.product, quantity=2, unit_price=1500000)
+
+    def test_stock_decremented_on_confirm(self):
+        self.order.status = 'confirmed'
+        self.order.save()
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 3)
+
+    def test_stock_restored_on_cancel(self):
+        self.order.status = 'confirmed'
+        self.order.save()
+        self.order.status = 'cancelled'
+        self.order.save()
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 5)
+
+    def test_stock_validation_fails_when_insufficient(self):
+        self.product.stock = 1
+        self.product.save()
+        self.order.status = 'confirmed'
+        with self.assertRaises(ValidationError):
+            self.order.save()
