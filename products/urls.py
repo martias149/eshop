@@ -1,4 +1,6 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
+from .views import me
 from .views import (
     BrandViewSet, CategoryViewSet, ProductViewSet, ProductImageViewSet,
     CustomerViewSet, AddressViewSet, OrderViewSet, OrderItemViewSet,
@@ -18,4 +20,6 @@ router.register(r'reviews', ReviewViewSet)
 router.register(r'carts', CartViewSet)
 router.register(r'cart-items', CartItemViewSet)
 
-urlpatterns = router.urls
+urlpatterns = router.urls + [
+    path('me/', me),
+]

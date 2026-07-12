@@ -1,4 +1,6 @@
 from rest_framework import viewsets
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 from .models import (
     Brand, Category, Product, ProductImage,
     Customer, Address, Order, OrderItem, Review, Cart, CartItem,
@@ -61,5 +63,20 @@ class CartViewSet(viewsets.ModelViewSet):
 
 
 class CartItemViewSet(viewsets.ModelViewSet):
-    queryset = CartItem.objects.all()
     serializer_class = CartItemSerializer
+
+    def get_queryset(self):
+        qs = CartItem.objects.all()
+        cart = self.request.query_params.get('cart')
+        if cart:
+            qs = qs.filter(cart_id=cart)
+        return qs
+
+
+@api_view(['GET'])
+def me(request):
+    if not request.user.is_authenticated:
+        return Response({'authenticated': False})
+    customer, _ = Customer.objects.get_or_create(user=request.user)
+    cart, _ = Cart.objects.get_or_create(customer=customer)
+    return Response({'authenticated': True, 'customer_id': customer.id, 'cart_id': cart.id})
